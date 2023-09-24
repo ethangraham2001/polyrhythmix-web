@@ -2,7 +2,8 @@ import random, string, os
 
 from django.shortcuts import render
 from django.utils.termcolors import colorize
-from django.http import JsonResponse, FileResponse, HttpResponse
+from django.http import HttpResponse
+from django.utils.http import quote
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -63,9 +64,12 @@ class GenerateMidiView(APIView):
         print(colorize(poly_stdout, fg='cyan'))
         print(colorize(poly_stderr, fg='red'))
 
+        poly_stdout = poly_stdout.split()
+
         return Response(
             {
                 'message': 'Success!',
+                'convergence_bars': poly_stdout[2],
                 'file_name': midi_name
             },
             status=status.HTTP_200_OK
@@ -74,7 +78,7 @@ class GenerateMidiView(APIView):
 
 class DownloadMidiView(APIView):
     """
-    Handles the download of midi files
+    Handles the downloading of midi files
     """
 
     def get(self, request, midi_name):
@@ -85,7 +89,10 @@ class DownloadMidiView(APIView):
         with open(midi_filepath, 'rb') as midi_file:
             midi_content = midi_file.read()
 
-        response = HttpResponse(midi_content, content_type='audio/midi')
-        response['Content-Disposition'] = f'attachment; "filename={midi_name}.mid"'
+        
+        midi_name += '.mid'
+        print(midi_name)
+        response = HttpResponse(midi_content, content_type='audio/x-midi')
+        response['Content-Disposition'] = f'attachment; "filename={quote(midi_name)}"'
 
         return response
